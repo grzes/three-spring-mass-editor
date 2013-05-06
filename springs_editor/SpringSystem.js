@@ -14,23 +14,12 @@ var Springs = function(signals) {
 
 	// removeSelectedObject doesn't dispatch the object as a param :()
 	// So we hack around, when the scene changes, check which of our points was removed
-	signals.sceneChanged.add( function ( scene ) {
-		var existingPoints = [];
-		scene.traverse( function (object) {
-			if ( object instanceof Springs.Point) {
-				existingPoints.push(object);
-			}
-		});
-
-		var i = self.points.length;
-		while (i--) {
-			if ( existingPoints.indexOf(self.points[i]) === -1 ) {
-				self.points.splice(i, 1);
-			}
+	signals.selectedObjectRemoved.add( function ( object ) {
+		if ( object instanceof Springs.Point) {
+			self.points.splice(self.points.indexOf(object), 1);
 		}
 	});
 
-	// the exporter used ignores our classes so you can't reload the page and still use the spring system :()
 
 	setInterval(function() { self.update() }, 1000);
 }

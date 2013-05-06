@@ -416,10 +416,11 @@ var Viewport = function ( signals ) {
 	signals.removeSelectedObject.add( function () {
 
 		if ( selected.parent === undefined ) return;
-
 		var name = selected.name ?  '"' + selected.name + '"': "selected object";
 
 		if ( confirm( 'Delete ' + name + '?' ) === false ) return;
+
+		signals.selectedObjectRemoved.dispatch(selected);
 
 		var parent = selected.parent;
 
