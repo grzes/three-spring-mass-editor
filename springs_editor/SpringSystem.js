@@ -7,7 +7,6 @@ var Springs = function(signals) {
 
 	signals.objectAdded.add( function ( object ) {
 		if ( object instanceof Springs.Point ) {
-			console.log('obj added', object);
 			self.points.push(object);
 		}
 	});
@@ -31,7 +30,6 @@ var Springs = function(signals) {
 	});
 
 	// the exporter used ignores our classes so you can't reload the page and still use the spring system :()
-	// signals.sceneAdded.add( function(scene) {} );
 
 	//setInterval(function() { self.update() }, 1000);
 }

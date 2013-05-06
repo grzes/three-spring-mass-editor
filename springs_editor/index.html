@@ -509,8 +509,8 @@
 			}
 
 			// localStorage
-
-			if ( localStorage.threejsEditor !== undefined ) {
+			// The used exporter doesn't serialize our SpringSystem objects so it's only confusing
+			if (false && ( localStorage.threejsEditor !== undefined )) {
 
 				var loader = new THREE.ObjectLoader();
 				var scene = loader.parse( JSON.parse( localStorage.threejsEditor ) );

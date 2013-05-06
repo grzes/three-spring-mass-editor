@@ -632,6 +632,8 @@ var Viewport = function ( signals ) {
 	}
 
 	function animate() {
+		system.integrate();
+		render();
 		requestAnimationFrame( animate );
 	}
 
