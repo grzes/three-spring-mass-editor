@@ -4,6 +4,8 @@
 var Springs = function(signals) {
 	this.points = [];
 	this.run = true;
+	this.selectedPoints = [];
+
 	var self = this;
 
 	signals.objectAdded.add( function ( object ) {
@@ -20,6 +22,17 @@ var Springs = function(signals) {
 		}
 	});
 
+	signals.objectSelected.add( function ( object ) {
+		if ( object instanceof Springs.Point ) {
+			self.selectedPoints.push(object);
+			object.material.color.b = 0; // make it yellow
+			if (self.selectedPoints.length === 3) {
+				self.selectedPoints[0].material.color.b = 1;
+				self.selectedPoints.splice(0, 1);
+			}
+
+		}
+	});
 
 	setInterval(function() { self.update() }, 1000);
 }
