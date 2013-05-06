@@ -118,7 +118,7 @@
 		<script src="js/ui/Sidebar.Geometry.TorusKnotGeometry.js"></script>
 		<script src="js/ui/Sidebar.Material.js"></script>
 		<script src="js/ui/Toolbar.js"></script>
-		<script src="js/ui/Viewport.js"></script>
+		<script src="Viewport.js"></script>
 
 		<script src="SpringSystem.js"></script>
 		<script>
@@ -155,6 +155,7 @@
 			};
 
 			//
+			system = new Springs(signals);
 
 			var viewport = new Viewport( signals );
 			viewport.setTop( '32px' );
@@ -558,6 +559,7 @@
 			window.addEventListener( 'resize', onWindowResize, false );
 
 			onWindowResize();
+			menubar.add( new Menubar.Springs( signals ) );
 
 		</script>
 	</body>
