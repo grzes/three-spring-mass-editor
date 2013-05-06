@@ -561,6 +561,15 @@
 			onWindowResize();
 			menubar.add( new Menubar.Springs( signals ) );
 
+			var buttons = new UI.Panel();
+			buttons.dom = toolbar.dom.children[0];
+			var springToggle = new UI.Checkbox( true ).onChange( function() {
+				system.run = !system.run;
+			} );
+			buttons.add( springToggle );
+			buttons.add( new UI.Text( 'Spring System' ) );
+
+
 		</script>
 	</body>
 </html>

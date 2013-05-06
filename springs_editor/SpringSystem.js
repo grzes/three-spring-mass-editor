@@ -3,6 +3,7 @@
 
 var Springs = function(signals) {
 	this.points = [];
+	this.run = true;
 	var self = this;
 
 	signals.objectAdded.add( function ( object ) {
@@ -31,15 +32,17 @@ var Springs = function(signals) {
 
 	// the exporter used ignores our classes so you can't reload the page and still use the spring system :()
 
-	//setInterval(function() { self.update() }, 1000);
+	setInterval(function() { self.update() }, 1000);
 }
 
 Springs.prototype.update = function() {
+	if (!this.run) return;
 	console.log( 'updating', this.points.length );
 	if (this.points.length) this.points[0].position.x = -this.points[0].position.x;
 }
 
 Springs.prototype.integrate = function() {
+	if (!this.run) return;
 	if (this.points.length) this.points[0].position.x *= 0.99;
 }
 
