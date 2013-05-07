@@ -567,6 +567,7 @@
 			buttons.dom = toolbar.dom.children[0];
 			var springToggle = new UI.Checkbox( false ).onChange( function() {
 				system.run = !system.run;
+				if (!system.run) system.resetVelocities();
 			} );
 			buttons.add( springToggle );
 			buttons.add( new UI.Text( 'Spring System' ) );

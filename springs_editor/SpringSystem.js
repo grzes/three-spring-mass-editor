@@ -6,6 +6,7 @@ var Springs = function(signals) {
 	this.run = false;
 	this.selecting = false;
 	this.selectedPoints = [];
+	this.gravity = new THREE.Vector3(0, -1, 0).multiplyScalar(10.0);
 	this.clock = new THREE.Clock();
 
 	this.constraints = [];
@@ -25,6 +26,12 @@ var Springs = function(signals) {
 	signals.selectedObjectRemoved.add( function ( object ) {
 		if ( object instanceof Springs.Point) {
 			self.points.splice(self.points.indexOf(object), 1);
+		}
+	});
+
+	signals.objectChanged.add( function ( object ) {
+		if ( object instanceof Springs.Point) {
+			object.velocity.set(0,0,0);
 		}
 	});
 
@@ -52,6 +59,14 @@ var Springs = function(signals) {
 	//setInterval(function() { self.update() }, 100);
 }
 
+
+Springs.prototype.resetVelocities = function () {
+	var i = this.points.length;
+	while (i--) {
+		this.points[i].velocity.set(0, 0, 0);
+	}
+}
+
 Springs.prototype.clearSelection = function () {
 	var i = this.selectedPoints.length;
 	while (i--) {
@@ -69,31 +84,48 @@ Springs.prototype.update = function() {
 		b = constraint.b;
 		diff = a.position.distanceTo(b.position) - constraint.length;
 		delta = a.position.clone().subVectors(a.position, b.position).normalize();
-		a.velocity.add(delta.clone().multiplyScalar(-diff));
-		b.velocity.add(delta.multiplyScalar(diff));
+		a.velocity.add(delta.clone().multiplyScalar(-diff*0.5));
+		b.velocity.add(delta.multiplyScalar(diff*0.5));
 		constraint.geometry.verticesNeedUpdate = true;
+	}
+	i = this.points.length;
+	while (i--) {
+		a = this.points[i];
+		a.velocity.add(this.gravity);
 	}
 }
 
 Springs.prototype.integrate = function() {
 	if (!this.run) return;
-	this.update();
+
 	var p,
-		i = this.points.length,
+		i = 5,
 		delta = this.clock.getDelta();
+	while(i--) {
+		this.update();
+	}
+
+
+	i = this.points.length;
 
 	while (i--) {
 		p = this.points[i];
 		p.velocity.multiplyScalar(0.9);
-		p.position.add(p.velocity.clone().multiplyScalar(delta));
+		if (!p.isStatic) {
+			p.position.add(p.velocity.clone().multiplyScalar(delta));
+			if (p.position.y < 0) {
+				p.position.y = 0;
+				p.velocity.set(-p.velocity.x, -p.velocity.y, p.velocity.z);
+			}
+		}
 	}
 }
 
 
-
-Springs.Point = function () {
+Springs.Point = function (isStatic) {
 	var geometry = new THREE.SphereGeometry( 5, 4, 2 );
 	this.velocity = new THREE.Vector3(0, 0, 0);
+	this.isStatic = isStatic || false;
 	THREE.Mesh.call(this, geometry, new THREE.LineBasicMaterial() );
 }
 Springs.Point.prototype = Object.create( THREE.Mesh.prototype );
@@ -134,8 +166,19 @@ Menubar.Springs = function ( signals ) {
 	option.setClass( 'option' );
 	option.setTextContent( 'Point' );
 	option.onClick( function () {
-		var point = new Springs.Point()
+		var point = new Springs.Point();
 		point.name = 'Point ' + point.id;
+		signals.objectAdded.dispatch( point );
+	} );
+	options.add( option );
+
+	// add static point
+	var option = new UI.Panel();
+	option.setClass( 'option' );
+	option.setTextContent( 'Static Point' );
+	option.onClick( function () {
+		var point = new Springs.Point(true);
+		point.name = 'Static Point ' + point.id;
 		signals.objectAdded.dispatch( point );
 	} );
 	options.add( option );
