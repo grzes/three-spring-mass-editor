@@ -134,6 +134,7 @@
 
 				cloneSelectedObject: new SIGNALS.Signal(),
 				removeSelectedObject: new SIGNALS.Signal(),
+				addConstraints: new SIGNALS.Signal(),
 
 				// notifications
 				selectedObjectRemoved: new SIGNALS.Signal(),
@@ -564,12 +565,18 @@
 
 			var buttons = new UI.Panel();
 			buttons.dom = toolbar.dom.children[0];
-			var springToggle = new UI.Checkbox( true ).onChange( function() {
+			var springToggle = new UI.Checkbox( false ).onChange( function() {
 				system.run = !system.run;
 			} );
 			buttons.add( springToggle );
 			buttons.add( new UI.Text( 'Spring System' ) );
 
+			var selectToggle = new UI.Checkbox( false ).onChange( function() {
+				system.selecting = !system.selecting;
+				if (!system.selecting) system.clearSelection();
+			} );
+			buttons.add( selectToggle );
+			buttons.add( new UI.Text( 'Selecting Points' ) );
 
 		</script>
 	</body>
