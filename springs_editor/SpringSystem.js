@@ -6,6 +6,7 @@ var Springs = function(signals) {
 	this.run = false;
 	this.selecting = false;
 	this.selectedPoints = [];
+	this.clock = new THREE.Clock();
 
 	this.constraints = [];
 	// TODO: When deleting points alsa remove all their constraints
@@ -48,7 +49,7 @@ var Springs = function(signals) {
 		}
 	});
 
-	setInterval(function() { self.update() }, 1000);
+	//setInterval(function() { self.update() }, 100);
 }
 
 Springs.prototype.clearSelection = function () {
@@ -61,19 +62,38 @@ Springs.prototype.clearSelection = function () {
 
 Springs.prototype.update = function() {
 	if (!this.run) return;
-	console.log( 'updating', this.points.length );
-	if (this.points.length) this.points[0].position.x = -this.points[0].position.x;
+	var delta, constraints, a, b, diff, i = this.constraints.length;
+	while (i--) {
+		constraint = this.constraints[i];
+		a = constraint.a;
+		b = constraint.b;
+		diff = a.position.distanceTo(b.position) - constraint.length;
+		delta = a.position.clone().subVectors(a.position, b.position).normalize();
+		a.velocity.add(delta.clone().multiplyScalar(-diff));
+		b.velocity.add(delta.multiplyScalar(diff));
+		constraint.geometry.verticesNeedUpdate = true;
+	}
 }
 
 Springs.prototype.integrate = function() {
 	if (!this.run) return;
-	if (this.points.length) this.points[0].position.x *= 0.99;
+	this.update();
+	var p,
+		i = this.points.length,
+		delta = this.clock.getDelta();
+
+	while (i--) {
+		p = this.points[i];
+		p.velocity.multiplyScalar(0.9);
+		p.position.add(p.velocity.clone().multiplyScalar(delta));
+	}
 }
 
 
 
 Springs.Point = function () {
 	var geometry = new THREE.SphereGeometry( 5, 4, 2 );
+	this.velocity = new THREE.Vector3(0, 0, 0);
 	THREE.Mesh.call(this, geometry, new THREE.LineBasicMaterial() );
 }
 Springs.Point.prototype = Object.create( THREE.Mesh.prototype );
@@ -81,8 +101,11 @@ Springs.Point.prototype = Object.create( THREE.Mesh.prototype );
 
 Springs.Constraint = function(a, b) {
 	var geometry = new THREE.Geometry();
+	this.a = a;
+	this.b = b;
 	geometry.vertices.push(a.position);
 	geometry.vertices.push(b.position);
+	this.length = a.position.distanceTo(b.position);
 	THREE.Line.call(this, geometry, new THREE.LineBasicMaterial( { color: 0xffffff, opacity: 0.5 } ) );
 }
 Springs.Constraint.prototype = Object.create( THREE.Line.prototype );
