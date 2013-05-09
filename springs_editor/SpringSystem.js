@@ -1,13 +1,9 @@
-// Most of the actual spring system code copied from:
-// http://www.netmagazine.com/tutorials/create-interactive-liquid-metal-ball-webgl
-
 var Springs = function(signals) {
 	this.points = [];
 	this.run = false;
 	this.selecting = false;
 	this.selectedPoints = [];
 	this.gravity = new THREE.Vector3(0, -1, 0).multiplyScalar(10.0);
-	this.clock = new THREE.Clock();
 
 	this.constraints = [];
 	// TODO: When deleting points alsa remove all their constraints
@@ -31,7 +27,7 @@ var Springs = function(signals) {
 
 	signals.objectChanged.add( function ( object ) {
 		if ( object instanceof Springs.Point) {
-			object.velocity.set(0,0,0);
+			object.oldPosition.copy(object.position);
 		}
 		self.updateAttached();
 	});
@@ -91,7 +87,6 @@ var Springs = function(signals) {
 		}
 		self.updateAttached();
 	})
-	//setInterval(function() { self.update() }, 100);
 }
 
 Springs.prototype.resetVelocities = function () {
@@ -109,52 +104,50 @@ Springs.prototype.clearSelection = function () {
 	this.selectedPoints = [];
 }
 
-Springs.prototype.update = function() {
-	if (!this.run) return;
-	var delta, constraints, a, b, diff, i = this.constraints.length;
-	while (i--) {
-		constraint = this.constraints[i];
-		a = constraint.a;
-		b = constraint.b;
-		diff = a.position.distanceTo(b.position) - constraint.length;
-		delta = a.position.clone().subVectors(a.position, b.position).normalize();
-		a.velocity.add(delta.clone().multiplyScalar(-diff*0.5));
-		b.velocity.add(delta.multiplyScalar(diff*0.5));
-		constraint.geometry.verticesNeedUpdate = true;
-	}
-	i = this.points.length;
-	while (i--) {
-		a = this.points[i];
-		a.velocity.add(this.gravity);
+Springs.prototype.satisfy = function() {
+	var c, diff, delta;
+	for (var t=0; t<5; t++) {
+		for (var i=0; i<this.constraints.length;i++) {
+			c = this.constraints[i];
+
+			delta = new THREE.Vector3().subVectors(c.b.position, c.a.position);
+			delta.multiplyScalar(c.length / (c.length + delta.length()) - 0.5);
+			//  length now means squere!
+			c.a.position.sub(delta);
+			c.b.position.add(delta);
+			c.geometry.verticesNeedUpdate = true;
+		}
 	}
 }
+
 
 Springs.prototype.integrate = function() {
 	if (!this.run) return;
 
-	var p,
-		i = 5,
-		delta = this.clock.getDelta();
+	this.satisfy();
+
+	var p, i = this.points.length,
+		tmp = new THREE.Vector3(),
+		delta = new THREE.Vector3(),
+		gravity = new THREE.Vector3(0, -0.01, 0),
+		DAMP = 0.96;
+
 	while(i--) {
-		this.update();
-	}
-
-
-	i = this.points.length;
-
-	while (i--) {
 		p = this.points[i];
-		p.velocity.multiplyScalar(0.9);
-		if (!p.isStatic) {
-			p.position.add(p.velocity.clone().multiplyScalar(delta));
-			if (p.position.y < 0) {
-				p.position.y = 0;
-				p.velocity.set(-p.velocity.x, -p.velocity.y, p.velocity.z);
-			}
+		if (p.isStatic) {
+			p.position.copy(p.oldPosition);
+		} else {
+			tmp.copy(p.position);
+
+			delta.subVectors(p.position, p.oldPosition).add(gravity);
+			p.position.add(delta.multiplyScalar(DAMP));
+			p.oldPosition.copy(tmp);
+			if (p.position.y < 0) p.position.y = 0;
 		}
 	}
 	this.updateAttached();
 }
+
 
 Springs.prototype.updateAttached = function() {
 	if (this.attached) {
@@ -177,6 +170,7 @@ Springs.Point = function (isStatic) {
 	var geometry = new THREE.SphereGeometry( 5, 4, 2 );
 	this.velocity = new THREE.Vector3(0, 0, 0);
 	this.isStatic = isStatic || false;
+	this.oldPosition = new THREE.Vector3(0,0,0);
 	THREE.Mesh.call(this, geometry, new THREE.LineBasicMaterial() );
 }
 Springs.Point.prototype = Object.create( THREE.Mesh.prototype );
@@ -188,6 +182,8 @@ Springs.Constraint = function(a, b) {
 	this.b = b;
 	geometry.vertices.push(a.position);
 	geometry.vertices.push(b.position);
+	geometry.verticesNeedUpdate = true;
+	//this.lengthSq = a.position.distanceToSquared(b.position);
 	this.length = a.position.distanceTo(b.position);
 	THREE.Line.call(this, geometry, new THREE.LineBasicMaterial( { color: 0xffffff, opacity: 0.5 } ) );
 }
