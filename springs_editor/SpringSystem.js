@@ -89,6 +89,7 @@ var Springs = function(signals) {
 				.sub(object.p0.position)
 				.applyMatrix4(matrix);
 		}
+		self.updateAttached();
 	})
 	//setInterval(function() { self.update() }, 100);
 }
@@ -163,9 +164,9 @@ Springs.prototype.updateAttached = function() {
 			v3 = new THREE.Vector3().subVectors(o.p3.position, o.p0.position);
 
 		o.matrix.set(
-			v1.x, v2.x, v3.x, 0,
-			v1.y, v2.y, v3.y, 0,
-			v1.z, v2.z, v3.z, 0,
+			v1.x, v2.x, v3.x, o.p0.position.x,
+			v1.y, v2.y, v3.y, o.p0.position.y,
+			v1.z, v2.z, v3.z, o.p0.position.z,
 			0,    0,    0,    1
 		);
 	}
