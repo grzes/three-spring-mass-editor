@@ -33,6 +33,7 @@ var Springs = function(signals) {
 		if ( object instanceof Springs.Point) {
 			object.velocity.set(0,0,0);
 		}
+		self.updateAttached();
 	});
 
 	signals.objectSelected.add( function ( object ) {
@@ -56,9 +57,41 @@ var Springs = function(signals) {
 		}
 	});
 
+	this.attached = 0;
+
+	signals.attachMeshSelected.add( function(object) {
+		if ((self.selectedPoints.length != 4) || !(object instanceof THREE.Mesh)) return;
+		self.attached = object;
+		// the 4 points that define our new coord space
+		object.p0 = self.selectedPoints[0];
+		object.p1 = self.selectedPoints[1];
+		object.p2 = self.selectedPoints[2];
+		object.p3 = self.selectedPoints[3];
+
+		var v1 = new THREE.Vector3().subVectors(object.p1.position, object.p0.position),
+			v2 = new THREE.Vector3().subVectors(object.p2.position, object.p0.position),
+			v3 = new THREE.Vector3().subVectors(object.p3.position, object.p0.position);
+
+		object.matrixAutoUpdate = false;
+		object.geometry.verticesNeedUpdate = true;
+		object.matrix.set(
+			v1.x, v2.x, v3.x, 0,
+			v1.y, v2.y, v3.y, 0,
+			v1.z, v2.z, v3.z, 0,
+			0,    0,    0,    1
+		);
+
+		var v, matrix = new THREE.Matrix4().getInverse(object.matrix);
+
+		for (var i=0; i< object.geometry.vertices.length; i++) {
+			object.geometry.vertices[i]
+				.add(object.position)
+				.sub(object.p0.position)
+				.applyMatrix4(matrix);
+		}
+	})
 	//setInterval(function() { self.update() }, 100);
 }
-
 
 Springs.prototype.resetVelocities = function () {
 	var i = this.points.length;
@@ -118,6 +151,23 @@ Springs.prototype.integrate = function() {
 				p.velocity.set(-p.velocity.x, -p.velocity.y, p.velocity.z);
 			}
 		}
+	}
+	this.updateAttached();
+}
+
+Springs.prototype.updateAttached = function() {
+	if (this.attached) {
+		var o = this.attached,
+			v1 = new THREE.Vector3().subVectors(o.p1.position, o.p0.position),
+			v2 = new THREE.Vector3().subVectors(o.p2.position, o.p0.position),
+			v3 = new THREE.Vector3().subVectors(o.p3.position, o.p0.position);
+
+		o.matrix.set(
+			v1.x, v2.x, v3.x, 0,
+			v1.y, v2.y, v3.y, 0,
+			v1.z, v2.z, v3.z, 0,
+			0,    0,    0,    1
+		);
 	}
 }
 
@@ -192,6 +242,14 @@ Menubar.Springs = function ( signals ) {
 	} );
 	options.add( option );
 
+	// add constraints
+	var option = new UI.Panel();
+	option.setClass( 'option' );
+	option.setTextContent( 'Attach Mesh' );
+	option.onClick( function () {
+		signals.attachMesh.dispatch();
+	} );
+	options.add( option );
 
 	return container;
 }

@@ -549,6 +549,10 @@ var Viewport = function ( signals ) {
 
 	} );
 
+	signals.attachMesh.add(function() {
+		signals.attachMeshSelected.dispatch( selected );
+	})
+
 	//
 
 	var renderer;
